@@ -1,65 +1,78 @@
-# Uncomment the required imports before adding the code
-
-# from django.shortcuts import render
-# from django.http import HttpResponseRedirect, HttpResponse
-# from django.contrib.auth.models import User
-# from django.shortcuts import get_object_or_404, render, redirect
-# from django.contrib.auth import logout
-# from django.contrib import messages
-# from datetime import datetime
-
-from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
-import logging
+"""Session-based authentication for the dealership application."""
 import json
-from django.views.decorators.csrf import csrf_exempt
-# from .populate import initiate
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db import IntegrityError, transaction
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_GET, require_POST
 
 
-# Get an instance of a logger
-logger = logging.getLogger(__name__)
+def identity(user):
+    return {'status': 'Authenticated', 'userName': user.username,
+            'firstName': user.first_name, 'lastName': user.last_name}
 
 
-# Create your views here.
-
-# Create a `login_request` view to handle sign in request
-@csrf_exempt
-def login_user(request):
-    # Get username and password from request.POST dictionary
+def body(request):
     data = json.loads(request.body)
-    username = data['userName']
-    password = data['password']
-    # Try to check if provide credential can be authenticated
-    user = authenticate(username=username, password=password)
-    data = {"userName": username}
-    if user is not None:
-        # If user is valid, call login method to login current user
-        login(request, user)
-        data = {"userName": username, "status": "Authenticated"}
-    return JsonResponse(data)
+    if not isinstance(data, dict):
+        raise ValueError('Expected a JSON object.')
+    return data
 
-# Create a `logout_request` view to handle sign out request
-# def logout_request(request):
-# ...
 
-# Create a `registration` view to handle sign up request
-# @csrf_exempt
-# def registration(request):
-# ...
+@require_GET
+@ensure_csrf_cookie
+def session_status(request):
+    return JsonResponse(identity(request.user) if request.user.is_authenticated
+                        else {'status': 'Anonymous'})
 
-# # Update the `get_dealerships` view to render the index page with
-# a list of dealerships
-# def get_dealerships(request):
-# ...
 
-# Create a `get_dealer_reviews` view to render the reviews of a dealer
-# def get_dealer_reviews(request,dealer_id):
-# ...
+@require_POST
+def login_user(request):
+    try:
+        data = body(request)
+        user = authenticate(request, username=data.get('userName', ''),
+                            password=data.get('password', ''))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+    if user is None:
+        return JsonResponse({'error': 'Invalid username or password.'}, status=401)
+    login(request, user)
+    return JsonResponse(identity(user))
 
-# Create a `get_dealer_details` view to render the dealer details
-# def get_dealer_details(request, dealer_id):
-# ...
 
-# Create a `add_review` view to submit a review
-# def add_review(request):
-# ...
+@require_POST
+def logout_request(request):
+    logout(request)
+    return JsonResponse({'status': 'Logged out'})
+
+
+@require_POST
+def registration(request):
+    try:
+        data = body(request)
+        username = str(data.get('userName', '')).strip()
+        email = str(data.get('email', '')).strip()
+        password = data.get('password', '')
+        if not username or not email:
+            raise ValidationError('Username and email are required.')
+        User._meta.get_field('username').run_validators(username)
+        validate_email(email)
+        user = User(username=username, email=email,
+                    first_name=str(data.get('firstName', '')).strip()[:150],
+                    last_name=str(data.get('lastName', '')).strip()[:150])
+        validate_password(password, user)
+        user.set_password(password)
+        with transaction.atomic():
+            user.save()
+    except IntegrityError:
+        return JsonResponse({'error': 'That username is already registered.'}, status=409)
+    except ValidationError as exc:
+        return JsonResponse({'error': ' '.join(exc.messages)}, status=400)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Invalid registration data.'}, status=400)
+    login(request, user)
+    return JsonResponse(identity(user), status=201)
