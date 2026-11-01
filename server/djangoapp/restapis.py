@@ -37,3 +37,10 @@ def analyze_review_sentiments(text):
 
 def post_review(data_dict):
     return request_json("POST", f"{backend_url}/insert_review", json=data_dict)
+
+
+searchcars_url = os.getenv("searchcars_url", "http://localhost:3050").rstrip("/")
+
+
+def searchcars_request(endpoint, **kwargs):
+    return request_json("GET", f'{searchcars_url}/{endpoint.lstrip("/")}', params=kwargs)
