@@ -1,18 +1,13 @@
 """VADER sentiment service using the lexicon bundled with the course."""
+import os
 from pathlib import Path
-from zipfile import ZipFile
 from flask import Flask, jsonify
-from nltk.sentiment import SentimentIntensityAnalyzer
+
+os.environ.setdefault('NLTK_DATA', str(Path(__file__).resolve().parent))
+from nltk.sentiment import SentimentIntensityAnalyzer  # noqa: E402
 
 app = Flask(__name__)
-lexicon_archive = Path(__file__).parent / 'sentiment' / 'vader_lexicon.zip'
-lexicon_dir = Path(__file__).parent / '.lexicon'
-lexicon_file = lexicon_dir / 'vader_lexicon.txt'
-if not lexicon_file.exists():
-    lexicon_dir.mkdir(exist_ok=True)
-    with ZipFile(lexicon_archive) as archive:
-        lexicon_file.write_bytes(archive.read('vader_lexicon/vader_lexicon.txt'))
-sia = SentimentIntensityAnalyzer(lexicon_file=str(lexicon_file))
+sia = SentimentIntensityAnalyzer()
 
 
 @app.get('/')
