@@ -20,7 +20,7 @@ spec:
         - name: icr
       containers:
         - name: dealership
-          image: us.icr.io/sn-labs-u242291/bestcars-dealership:1
+          image: us.icr.io/sn-labs-u242291/bestcars-dealership:2
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
@@ -29,6 +29,8 @@ spec:
               value: https://u242291-3030.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai
             - name: sentiment_analyzer_url
               value: https://bestcars-sentiment.2gmhw78cilgx.us-south.codeengine.appdomain.cloud
+            - name: searchcars_url
+              value: https://u242291-3050.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai
             - name: DJANGO_DB_PATH
               value: /data/db.sqlite3
           resources:
