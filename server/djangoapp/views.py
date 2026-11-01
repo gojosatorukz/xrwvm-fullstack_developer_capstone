@@ -76,3 +76,78 @@ def registration(request):
         return JsonResponse({'error': 'Invalid registration data.'}, status=400)
     login(request, user)
     return JsonResponse(identity(user), status=201)
+
+
+@require_GET
+def get_cars(request):
+    from .models import CarMake, CarModel
+    cars = [{'id': car.id, 'CarMake': car.car_make.name,
+             'CarModel': car.name, 'CarYear': car.year, 'CarType': car.type}
+            for car in CarModel.objects.select_related('car_make')]
+    return JsonResponse({'status': 200, 'CarModels': cars,
+                         'CarMakes': list(CarMake.objects.values('id', 'name'))})
+
+
+@require_GET
+def get_dealerships(request, state='All'):
+    from urllib.parse import quote
+    from .restapis import get_request, ServiceError
+    try:
+        endpoint = 'fetchDealers' if state == 'All' else 'fetchDealers/' + quote(state, safe='')
+        return JsonResponse({'status': 200, 'dealers': get_request(endpoint)})
+    except ServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+
+
+@require_GET
+def get_dealer_details(request, dealer_id):
+    from .restapis import get_request, ServiceError
+    try:
+        dealers = get_request(f'fetchDealer/{dealer_id}')
+        return JsonResponse({'status': 200, 'dealer': dealers}, status=200 if dealers else 404)
+    except ServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+
+
+@require_GET
+def get_dealer_reviews(request, dealer_id):
+    from .restapis import get_request, analyze_review_sentiments, ServiceError
+    try:
+        reviews = get_request(f'fetchReviews/dealer/{dealer_id}')
+        for review in reviews:
+            review['sentiment'] = analyze_review_sentiments(review['review'])
+        return JsonResponse({'status': 200, 'reviews': reviews})
+    except ServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
+
+
+@require_POST
+def add_review(request):
+    from datetime import date
+    from .models import CarModel
+    from .restapis import post_review, ServiceError
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Sign in before posting a review.'}, status=401)
+    try:
+        data = body(request)
+        text = str(data.get('review', '')).strip()
+        dealer = int(data.get('dealership', 0))
+        year = int(data.get('car_year', 0))
+        purchase_date = date.fromisoformat(data.get('purchase_date', ''))
+        if not text or len(text) > 5000 or dealer <= 0 or not 2015 <= year <= 2023:
+            raise ValueError('Invalid review or purchase details.')
+        if not isinstance(data.get('purchase'), bool):
+            raise ValueError('Purchase must be true or false.')
+        if not CarModel.objects.filter(car_make__name=data.get('car_make'), name=data.get('car_model')).exists():
+            raise ValueError('Choose a car from the catalogue.')
+        payload = {'name': request.user.get_full_name() or request.user.username,
+                   'dealership': dealer, 'review': text,
+                   'purchase': data['purchase'], 'purchase_date': purchase_date.isoformat(),
+                   'car_make': data['car_make'], 'car_model': data['car_model'],
+                   'car_year': year}
+        saved = post_review(payload)
+        return JsonResponse({'status': 200, 'review': saved}, status=201)
+    except (ValueError, TypeError, KeyError):
+        return JsonResponse({'error': 'Invalid review or purchase details.'}, status=400)
+    except ServiceError as exc:
+        return JsonResponse({'error': str(exc)}, status=503)
