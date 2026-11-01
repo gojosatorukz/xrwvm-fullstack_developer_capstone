@@ -167,3 +167,23 @@ def add_review(request):
         return JsonResponse({"error": "Invalid review or purchase details."}, status=400)
     except ServiceError as exc:
         return JsonResponse({"error": str(exc)}, status=503)
+
+
+@require_GET
+def get_inventory(request, dealer_id=None):
+    from .restapis import searchcars_request, ServiceError
+
+    if dealer_id is None or dealer_id <= 0:
+        return JsonResponse({"error": "A positive dealership ID is required."}, status=400)
+    allowed = {"make", "model", "year", "mileage", "price"}
+    if set(request.GET) - allowed:
+        return JsonResponse({"error": "Unknown inventory filter."}, status=400)
+    filters = {key: value for key, value in request.GET.items() if value}
+    for key in ("year", "mileage", "price"):
+        if key in filters and (not filters[key].isdigit() or not 0 < int(filters[key]) <= 10000000):
+            return JsonResponse({"error": f"Invalid {key}."}, status=400)
+    try:
+        cars = searchcars_request(f"cars/{dealer_id}", **filters)
+        return JsonResponse({"status": 200, "cars": cars})
+    except ServiceError as exc:
+        return JsonResponse({"error": str(exc)}, status=503)
