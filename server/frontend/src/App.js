@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Routes, Route, Link, useNavigate} from 'react-router-dom';
 import './App.css';
+import {Dealers, Dealer, PostReview} from './DealershipPages';
 
 function csrf() {
   return document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
@@ -23,7 +24,6 @@ export async function api(path, data) {
 function AuthForm({register, onSuccess}) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const navigate = useNavigate();
   async function submit(event) {
     event.preventDefault(); setError(''); setBusy(true);
     const values = Object.fromEntries(new FormData(event.currentTarget));
@@ -65,9 +65,12 @@ function App() {
     try {await api('logout', {}); setUser(null); sessionStorage.removeItem('username'); navigate('/login');}
     catch (err) {setError(err.message);}
   }
-  return <><header className="site-header"><a className="brand" href="/">BestCars<span>FIND YOUR NEXT CHAPTER</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/about/">About</a><a href="/contact/">Contact</a>{user ? <><span>Hi, {user.firstName || user.userName}</span><button onClick={signOut}>Sign out</button></> : <><Link to="/login">Sign in</Link><Link to="/register">Register</Link></>}</nav></header><main>
+  return <><header className="site-header"><a className="brand" href="/">BestCars<span>FIND YOUR NEXT CHAPTER</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/about/">About</a><a href="/contact/">Contact</a><Link to="/dealers">Dealerships</Link>{user ? <><span>Hi, {user.firstName || user.userName}</span><button onClick={signOut}>Sign out</button></> : <><Link to="/login">Sign in</Link><Link to="/register">Register</Link></>}</nav></header><main>
     {error && <p role="alert" className="error">{error}</p>}
     {!ready ? <p role="status">Loading your session…</p> : <Routes>
+      <Route path="/dealers" element={<Dealers />} />
+      <Route path="/dealer/:id" element={<Dealer />} />
+      <Route path="/postreview/:id" element={<PostReview user={user} />} />
       <Route path="/login" element={<AuthForm key="login" onSuccess={setUser} />} />
       <Route path="/register" element={<AuthForm key="register" register onSuccess={setUser} />} />
       <Route path="/account" element={<section className="auth-card"><p className="eyebrow">YOUR ACCOUNT</p><h1>{user ? `Welcome, ${user.firstName || user.userName}` : 'You are signed out'}</h1><p>{user ? `Signed in as ${user.userName}. Your session is ready.` : 'Sign in to continue.'}</p>{user ? <button onClick={signOut}>Sign out</button> : <Link to="/login">Sign in</Link>}</section>} />
