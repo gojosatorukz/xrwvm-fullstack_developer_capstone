@@ -46,7 +46,7 @@ async function start() {
   if (await Dealerships.countDocuments() === 0) await Dealerships.insertMany(load('dealerships').dealerships);
   if (await Reviews.countDocuments() === 0) await Reviews.insertMany(load('reviews').reviews);
   const latest = await Reviews.findOne().sort({id: -1}).lean();
-  await Counter.updateOne({_id: 'reviews'}, {$max: {value: latest?.id || 0}}, {upsert: true});
+  await Counter.updateOne({_id: 'reviews'}, {$max: {value: (latest && latest.id) || 0}}, {upsert: true});
   const server = app.listen(Number(process.env.PORT || 3030), () => console.log('Dealership API listening on port ' + (process.env.PORT || 3030)));
   process.on('SIGTERM', () => server.close(() => mongoose.disconnect().then(() => process.exit(0))));
 }
