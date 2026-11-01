@@ -1,0 +1,22 @@
+services:
+  mongo_db:
+    image: mongo:7
+    volumes:
+      - inventory_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  inventory:
+    build: .
+    image: bestcars-inventory
+    ports:
+      - "3050:3050"
+    environment:
+      MONGODB_URI: mongodb://mongo_db:27017/carsInventory
+    depends_on:
+      mongo_db:
+        condition: service_healthy
+volumes:
+  inventory_data:
