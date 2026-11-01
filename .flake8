@@ -1,0 +1,4 @@
+[flake8]
+exclude = .git,__pycache__,migrations,djangoenv,node_modules,build,.course-tools
+max-line-length = 120
+extend-ignore = E203,E501,W503
