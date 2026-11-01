@@ -30,7 +30,7 @@ export default function AuthForm({register, onSuccess}) {
       <label>Password<input name="password" type="password" autoComplete={register ? 'new-password' : 'current-password'} required /></label>
       {register && <><label>Confirm password<input name="confirmPassword" type="password" autoComplete="new-password" required /></label><small>Use at least 8 characters and avoid common passwords or personal information.</small></>}
       {error && <p className="error" role="alert">{error}</p>}
-      <button disabled={busy} type="submit">{busy ? 'Please wait…' : register ? 'Create account' : 'Sign in'}</button>
+      <button disabled={busy} type="submit">{busy ? 'Please wait…' : register ? 'Register' : 'Sign in'}</button>
     </form>
     <p>{register ? 'Already have an account? ' : 'New to BestCars? '}<Link to={register ? '/login' : '/register'}>{register ? 'Sign in' : 'Register'}</Link></p>
   </section>;
