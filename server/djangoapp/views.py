@@ -9,7 +9,7 @@ from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 
 def identity(user):
@@ -47,10 +47,14 @@ def login_user(request):
     return JsonResponse(identity(user))
 
 
-@require_POST
+@require_http_methods(["GET", "POST"])
 def logout_request(request):
-    logout(request)
-    return JsonResponse({"status": "Logged out"})
+    # GET confirms an already ended session; only CSRF-protected POST changes it.
+    if request.method == "GET" and request.user.is_authenticated:
+        return JsonResponse({"error": "Use POST to sign out."}, status=405)
+    if request.method == "POST":
+        logout(request)
+    return JsonResponse({"status": "Logged out", "userName": ""})
 
 
 @require_POST
