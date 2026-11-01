@@ -24,6 +24,7 @@ class AuthenticationTests(TestCase):
         self.assertEqual(response.json()["userName"], "fixture_user")
         self.assertTrue(User.objects.get(username="fixture_user").check_password(self.payload["password"]))
         self.assertEqual(self.client.get("/djangoapp/session").json()["status"], "Authenticated")
+        self.assertEqual(self.client.get("/djangoapp/logout").status_code, 405)
         self.assertEqual(self.post("logout", {}).status_code, 200)
         self.assertEqual(self.client.get("/djangoapp/session").json()["status"], "Anonymous")
         self.assertEqual(self.post("login", self.payload).status_code, 200)
@@ -41,7 +42,7 @@ class AuthenticationTests(TestCase):
     def test_rejects_invalid_json_and_credentials(self):
         self.assertEqual(self.post("login", []).status_code, 400)
         self.assertEqual(self.post("login", self.payload).status_code, 401)
-        self.assertEqual(self.client.get("/djangoapp/logout").status_code, 405)
+        self.assertEqual(self.client.get("/djangoapp/logout").json()["userName"], "")
 
     def test_csrf_is_required(self):
         client = Client(enforce_csrf_checks=True)
