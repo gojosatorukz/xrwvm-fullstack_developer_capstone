@@ -22,7 +22,7 @@ from django.conf import settings
 
 urlpatterns = [
     re_path(
-        r"^(?:login|register|account|dealers|dealer/[0-9]+|postreview/[0-9]+)/?$",
+        r"^(?:login|register|account|dealers|dealer/[0-9]+|postreview/[0-9]+|searchcars/[0-9]+)/?$",
         TemplateView.as_view(template_name="index.html"),
     ),
     path("about/", TemplateView.as_view(template_name="About.html")),
