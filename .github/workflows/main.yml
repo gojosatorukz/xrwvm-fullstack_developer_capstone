@@ -37,7 +37,7 @@ jobs:
       - name: Install JSHint
         run: npm install --global jshint
       - name: Run JavaScript linter
-        run: jshint server/database/*.js
+        run: jshint server/database/*.js server/carsInventory/*.js
   build_react:
     name: Build React
     runs-on: ubuntu-latest
