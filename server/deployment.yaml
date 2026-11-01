@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bestcars-capstone
+  labels:
+    app: bestcars-capstone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bestcars-capstone
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: bestcars-capstone
+    spec:
+      imagePullSecrets:
+        - name: icr
+      containers:
+        - name: dealership
+          image: us.icr.io/sn-labs-u242291/bestcars-dealership:1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: backend_url
+              value: https://u242291-3030.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai
+            - name: sentiment_analyzer_url
+              value: https://bestcars-sentiment.2gmhw78cilgx.us-south.codeengine.appdomain.cloud
+            - name: DJANGO_DB_PATH
+              value: /data/db.sqlite3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: course-data
+              mountPath: /data
+      volumes:
+        - name: course-data
+          emptyDir: {}
