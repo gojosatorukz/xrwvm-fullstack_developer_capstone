@@ -1,0 +1,54 @@
+name: Lint and Test Capstone
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lint_python:
+    name: Lint Python Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt flake8
+      - name: Run Python linter
+        run: flake8 server/djangoapp server/djangoproj server/manage.py
+      - name: Check database migrations
+        working-directory: server
+        run: python manage.py makemigrations --check
+      - name: Test authentication catalogue and proxies
+        working-directory: server
+        run: python manage.py test djangoapp --verbosity 2
+  lint_js:
+    name: Lint JavaScript Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install JSHint
+        run: npm install --global jshint
+      - name: Run JavaScript linter
+        run: jshint server/database/*.js
+  build_react:
+    name: Build React
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked frontend dependencies
+        working-directory: server/frontend
+        run: npm ci --no-audit --no-fund
+      - name: Build frontend
+        working-directory: server/frontend
+        run: npm run build
