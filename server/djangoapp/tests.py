@@ -121,3 +121,25 @@ class CatalogueAndProxyTests(TestCase):
             self.client.post("/djangoapp/add_review", json.dumps(payload), content_type="application/json").status_code,
             400,
         )
+
+
+class InventoryTests(TestCase):
+    def test_inventory_validation_and_filters(self):
+        from unittest.mock import patch
+
+        for path in ("get_inventory", "get_inventory/0", "get_inventory/1?price=abc", "get_inventory/1?unexpected=1"):
+            self.assertEqual(self.client.get("/djangoapp/" + path).status_code, 400)
+        with patch(
+            "djangoapp.restapis.searchcars_request", return_value=[{"make": "Audi", "price": 70000}]
+        ) as upstream:
+            result = self.client.get("/djangoapp/get_inventory/1?make=Audi&year=2021&price=80000")
+            self.assertEqual(result.status_code, 200)
+            self.assertEqual(result.json()["cars"][0]["make"], "Audi")
+            upstream.assert_called_once_with("cars/1", make="Audi", year="2021", price="80000")
+
+    def test_inventory_upstream_failure(self):
+        from unittest.mock import patch
+        from .restapis import ServiceError
+
+        with patch("djangoapp.restapis.searchcars_request", side_effect=ServiceError("Unavailable")):
+            self.assertEqual(self.client.get("/djangoapp/get_inventory/1").status_code, 503)
