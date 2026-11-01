@@ -10,7 +10,7 @@ function filters(id,query){const result={dealer_id:number(id)};for(const field o
 app.get('/',(_req,res)=>res.send('Welcome to the Mongoose Car Inventory API'));
 app.get('/health',(_req,res)=>res.status(mongoose.connection.readyState===1?200:503).json({ready:mongoose.connection.readyState===1}));
 app.get('/cars/:id',route(async(req,res)=>res.json(await Cars.find(filters(req.params.id,req.query)).lean())));
-for(const [path,field] of [['carsbymake','make'],['carsbymodel','model'],['carsbymaxmileage','mileage'],['carsbyprice','price'],['carsbyyear','year']])app.get('/'+path+'/:id/:value',route(async(req,res)=>res.json(await Cars.find(filters(req.params.id,{[field]:req.params.value})).lean())));
+[['carsbymake','make'],['carsbymodel','model'],['carsbymaxmileage','mileage'],['carsbyprice','price'],['carsbyyear','year']].forEach(([path,field])=>app.get('/'+path+'/:id/:value',route(async(req,res)=>res.json(await Cars.find(filters(req.params.id,{[field]:req.params.value})).lean()))));
 app.use((error,_req,res,_next)=>res.status(error.status||500).json({error:error.status?error.message:'Inventory service unavailable.'}));
 async function start(){await mongoose.connect(process.env.MONGODB_URI||'mongodb://mongo_db:27017/carsInventory',{serverSelectionTimeoutMS:15000});if(await Cars.countDocuments()===0)await Cars.insertMany(require('./data/car_records.json').cars);const server=app.listen(Number(process.env.PORT||3050),()=>console.log('Inventory API listening on port 3050'));process.on('SIGTERM',()=>server.close(()=>mongoose.disconnect().then(()=>process.exit(0))));}
 if(require.main===module)start().catch(error=>{console.error(error.message);process.exitCode=1;});
