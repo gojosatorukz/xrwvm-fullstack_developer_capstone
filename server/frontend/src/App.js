@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Routes, Route, Link, useNavigate} from 'react-router-dom';
 import './App.css';
 import {Dealers, Dealer, PostReview} from './DealershipPages';
+import SearchCars from './SearchCars';
 
 function csrf() {
   return document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
@@ -68,8 +69,9 @@ function App() {
   return <><header className="site-header"><a className="brand" href="/">BestCars<span>FIND YOUR NEXT CHAPTER</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/about/">About</a><a href="/contact/">Contact</a><Link to="/dealers">Dealerships</Link>{user ? <><span>Hi, {user.firstName || user.userName}</span><button onClick={signOut}>Sign out</button></> : <><Link to="/login">Sign in</Link><Link to="/register">Register</Link></>}</nav></header><main>
     {error && <p role="alert" className="error">{error}</p>}
     {!ready ? <p role="status">Loading your session…</p> : <Routes>
-      <Route path="/dealers" element={<Dealers />} />
-      <Route path="/dealer/:id" element={<Dealer />} />
+      <Route path="/dealers" element={<Dealers user={user} />} />
+      <Route path="/dealer/:id" element={<Dealer user={user} />} />
+      <Route path="/searchcars/:id" element={<SearchCars />} />
       <Route path="/postreview/:id" element={<PostReview user={user} />} />
       <Route path="/login" element={<AuthForm key="login" onSuccess={setUser} />} />
       <Route path="/register" element={<AuthForm key="register" register onSuccess={setUser} />} />
