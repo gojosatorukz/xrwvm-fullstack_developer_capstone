@@ -34,7 +34,7 @@ function App() {
     try {await api('logout', {}); setUser(null); sessionStorage.removeItem('username'); navigate('/login');}
     catch (err) {setError(err.message);}
   }
-  return <><header className="site-header"><a className="brand" href="/">BestCars<span>FIND YOUR NEXT CHAPTER</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/about/">About</a><a href="/contact/">Contact</a><Link to="/dealers">Dealerships</Link>{user ? <><span>Hi, {user.firstName || user.userName}</span><button onClick={signOut}>Sign out</button></> : <><Link to="/login">Sign in</Link><Link to="/register">Register</Link></>}</nav></header><main>
+  return <><header className="site-header"><a className="brand" href="/">BestCars<span>FIND YOUR NEXT CHAPTER</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/about/">About</a><a href="/contact/">Contact</a><Link to="/dealers">Dealerships</Link>{user ? <><span>Hi, {user.userName}</span><button onClick={signOut}>Sign out</button></> : <><Link to="/login">Sign in</Link><Link to="/register">Register</Link></>}</nav></header><main>
     {error && <p role="alert" className="error">{error}</p>}
     {!ready ? <p role="status">Loading your session…</p> : <Routes>
       <Route path="/dealers" element={<Dealers user={user} />} />
