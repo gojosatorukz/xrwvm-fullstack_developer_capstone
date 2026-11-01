@@ -1,23 +1,22 @@
-version: '3.9'
-
 services:
-  # Mongodb service
   mongo_db:
-    container_name: db_container
-    image: mongo:latest
-    ports:
-      - 27017:27017
-    restart: always
+    image: mongo:7
     volumes:
       - mongo_data:/data/db
-
-  # Node api service
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
   api:
-    image: nodeapp
+    build: .
+    image: bestcars-nodeapp
     ports:
-      - 3030:3030
-    depends_on: 
-      - mongo_db
-
+      - "3030:3030"
+    environment:
+      MONGODB_URI: mongodb://mongo_db:27017/dealershipsDB
+    depends_on:
+      mongo_db:
+        condition: service_healthy
 volumes:
   mongo_data: {}
